@@ -1,46 +1,54 @@
 #`version: '3.8'
 
 services:
-   ndb-mgmd:
+
+#ndb  -mgmd-1  | 2024-10-27 15:46:12 [MgmtSrvr] ERROR    -- Error opening '/etc/mysql-cluster.cnf', error: 2, No such file or directory
+#ndb  -mgmd-1  | 2024-10-27 15:46:12 [MgmtSrvr] ERROR    -- Could not load configuration from '/etc/mysql-cluster.cnf'
+#ndb  -mgmd-1  | 2024-10-27 15:46:12 [MgmtSrvr] ERROR    -- Could not determine which nodeid to use for this node. Specify it with --ndb-nodeid=<nodeid> on command line
+#ndb-mgmd-1  | 2024-10-27 15:56:24 [MgmtSrvr] ERROR    -- Could not resolve hostname [node 2]: ndb-data1
+  ndb-mgmd:
     image: obulka/mysql-cluster
     #command: ndb_mgmd
-    command: ["ndb_mgmd", "--ndb-nodeid=1"]
+    #Default options are read from the following files in the given order:
+    #/etc/my.cnf /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf ~/.my.cnf
+    command: ndb_mgmd --initial --config-file /var/lib/mysql-cluster/cluster.ini --ndb-nodeid=1
     volumes:
-      - ./configs/node.cnf:/etc/my.cnf
-      - ./configs/cluster.cnf:/etc/mysql-cluster.cnf
+      #- ./configs/node.ini:/etc/my.cnf
+      - ./configs/cluster.ini:/etc/mysql-cluster.cnf
+
+      #/usr/local/mysql/mysql-cluster
+
+
+
     networks:
       - mysql_cluster
-   ndb-data1:
+
+
+# ndb-data1-1     | 2024-10-27 16:52:50 [ndbd] ERROR    -- Could not fetch configuration/invalid configuration, error: 'Could not resolve hostname [node 3]: mysql-server'
+  ndb-data1:
     image: obulka/mysql-cluster
-    depends_on:
-      - "ndb-mgmd"
+  #    depends_on:
+  #      - "ndb-mgmd"
     command: ndbd
     volumes:
-      - ./configs/node.cnf:/etc/my.cnf
-      - ./configs/cluster.cnf:/etc/mysql-cluster.cnf
+      - ./configs/node.ini:/etc/my.cnf
+      # - ./configs/cluster.ini:/etc/mysql-cluster.cnf
     networks:
       - mysql_cluster
-#  ndb-data2:
-#    image: # some image
-#    command: ndb
-#    volumes:
-#      - /etc/my.cnf
-#    networks:
-#      - mysql_cluster
-   mysql-server:
+
+    # https://docs.docker.com/reference/compose-file/services/#restart
+    #restart: on-failure
+
+  mysql-server:
     image: obulka/mysql-cluster
-    command: mysqld
-    #ports:
-     # - "3305:3306"
-    depends_on:
-      - "ndb-mgmd"
-      - "ndb-data1"
-#- "ndb_data2"
-    #environment:
-     # MYSQL_ROOT_PASSWORD: root_password
+    #depends_on:
+    #  - "ndb-mgmd"
+    #  - "ndb-data1"
+    command: mysqld --ndb-nodeid=4
     volumes:
-      - ./configs/node.cnf:/etc/my.cnf
-      - ./configs/cluster.cnf:/etc/mysql-cluster.cnf
+      - ./configs/node.ini:/etc/my.cnf
+    #ports:
+        # - "3306"
     networks:
       - mysql_cluster
 
