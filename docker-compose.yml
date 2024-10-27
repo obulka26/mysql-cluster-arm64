@@ -1,0 +1,50 @@
+#`version: '3.8'
+
+services:
+   ndb-mgmd:
+    image: obulka/mysql-cluster
+    #command: ndb_mgmd
+    command: ["ndb_mgmd", "--ndb-nodeid=1"]
+    volumes:
+      - ./configs/node.cnf:/etc/my.cnf
+      - ./configs/cluster.cnf:/etc/mysql-cluster.cnf
+    networks:
+      - mysql_cluster
+   ndb-data1:
+    image: obulka/mysql-cluster
+    depends_on:
+      - "ndb-mgmd"
+    command: ndbd
+    volumes:
+      - ./configs/node.cnf:/etc/my.cnf
+      - ./configs/cluster.cnf:/etc/mysql-cluster.cnf
+    networks:
+      - mysql_cluster
+#  ndb-data2:
+#    image: # some image
+#    command: ndb
+#    volumes:
+#      - /etc/my.cnf
+#    networks:
+#      - mysql_cluster
+   mysql-server:
+    image: obulka/mysql-cluster
+    command: mysqld
+    #ports:
+     # - "3305:3306"
+    depends_on:
+      - "ndb-mgmd"
+      - "ndb-data1"
+#- "ndb_data2"
+    #environment:
+     # MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - ./configs/node.cnf:/etc/my.cnf
+      - ./configs/cluster.cnf:/etc/mysql-cluster.cnf
+    networks:
+      - mysql_cluster
+
+networks:
+  mysql_cluster:
+    driver: bridge
+

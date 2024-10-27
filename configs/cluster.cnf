@@ -1,0 +1,17 @@
+[ndbd default]
+NoOfReplicas=1
+DataMemory=80M
+
+[ndb_mgmd]
+NodeId=1
+hostname=ndb-mgmd
+datadir=/usr/local/mysql/data
+
+[ndbd]
+NodeId=2
+hostname=ndb-data1
+datadir=/usr/local/mysql/data
+
+[mysqld]
+NodeId=3
+hostname=mysql-server

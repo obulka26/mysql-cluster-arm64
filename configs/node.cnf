@@ -1,0 +1,8 @@
+[mysqld]
+;ndbcluster
+ndb-connectstring=ndb-mgmd 
+user=mysql
+; skip_name_resolve 
+
+[mysql_cluster]
+ndb-connectstring=ndb-mgmd

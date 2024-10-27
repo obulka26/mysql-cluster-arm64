@@ -36,6 +36,8 @@ RUN rpm -i https://rpmfind.net/linux/centos-stream/9-stream/BaseOS/aarch64/os/Pa
 RUN mkdir -p /var/lib/mysql
 RUN chown -R mysql:mysql /var/lib/mysql
 
+RUN mkdir -p /usr/local/mysql/data
+
 RUN mkdir -p /var/lib/mysql-files
 RUN chown -R mysql:mysql /var/lib/mysql-files
 RUN chmod 750 /var/lib/mysql-files
