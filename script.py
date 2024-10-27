@@ -34,7 +34,7 @@ def main():
     # Replace with your MySQL Cluster credentials
     host = "localhost"  # Use your actual host, e.g., 'ndb-mgmd' or 'localhost'
     user = "mysql"  # MySQL user
-    password = ""  # MySQL password (if any)
+    password = "my-super-password"  # MySQL password (if any)
 
     # Create connection
     connection = create_connection(host, user, password)
