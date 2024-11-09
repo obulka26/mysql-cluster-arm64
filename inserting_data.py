@@ -4,6 +4,8 @@ from faker import Faker
 import random
 import time
 
+start_time = time.perf_counter()
+
 # Налаштування підключення до основного MySQL-кластера
 config = {
     "host": "localhost",  # IP SQL-ноди кластера
@@ -70,6 +72,10 @@ def main():
         time.sleep(random.uniform(0.1, 0.2))  # Затримка для реалістичності
 
     connection.close()
+
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+    print(f"Час виконання: {execution_time:.4f} секунд")
 
 
 if __name__ == "__main__":
