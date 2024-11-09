@@ -9,7 +9,7 @@ services:
     #/etc/my.cnf /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf ~/.my.cnf
     command: ndb_mgmd --initial --config-file /etc/mysql-cluster.cnf --ndb-nodeid=1
     volumes:
-      - ./configs/cluster.ini:/etc/mysql-cluster.cnf
+      - ./configs/cluster-2-nodes.ini:/etc/mysql-cluster.cnf
 
     networks:
       - mysql_cluster
