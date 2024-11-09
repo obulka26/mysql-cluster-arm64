@@ -7,7 +7,7 @@ services:
     #command: ndb_management
     #Default options are read from the following files in the given order:
     #/etc/my.cnf /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf ~/.my.cnf
-    command: ndb_mgmd --initial --config-file /var/lib/mysql-cluster/cluster.ini --ndb-nodeid=1
+    command: ndb_mgmd --initial --config-file /etc/mysql-cluster.cnf --ndb-nodeid=1
     volumes:
       - ./configs/cluster.ini:/etc/mysql-cluster.cnf
 
@@ -54,7 +54,7 @@ services:
       MYSQL_USER: myapp
 
     ports:
-      - 3306:3306
+      - 3310:3306
     networks:
       - mysql_cluster
 
