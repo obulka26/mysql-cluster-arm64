@@ -1,0 +1,85 @@
+#`version: '3.8'
+
+services:
+
+  management:
+    image: obulka/mysql-cluster
+    #command: ndb_management
+    #Default options are read from the following files in the given order:
+    #/etc/my.cnf /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf ~/.my.cnf
+    command: ndb_mgmd --initial --config-file /etc/mysql-cluster.cnf --ndb-nodeid=1
+    volumes:
+      - ./configs/cluster-4-nodes.ini:/etc/mysql-cluster.cnf
+
+    networks:
+      - mysql_cluster
+
+
+  data1:
+    image: obulka/mysql-cluster
+    depends_on:
+      - "management"
+    command: ndbd --ndb-nodeid=2
+    volumes:
+      - ./configs/node.ini:/etc/my.cnf
+    networks:
+      - mysql_cluster
+
+  data2:
+    image: obulka/mysql-cluster
+    depends_on:
+      - "management"
+    command: ndbd --ndb-nodeid=3
+    volumes:
+      - ./configs/node.ini:/etc/my.cnf
+    networks:
+      - mysql_cluster
+
+    # https://docs.docker.com/reference/compose-file/services/#restart
+    #restart: on-failure
+  data3:
+    image: obulka/mysql-cluster
+    depends_on:
+      - "management"
+    command: ndbd --ndb-nodeid=5
+    volumes:
+      - ./configs/node.ini:/etc/my.cnf
+    networks:
+      - mysql_cluster
+  
+  data4:
+    image: obulka/mysql-cluster
+    depends_on:
+      - "management"
+    command: ndbd --ndb-nodeid=6
+    volumes:
+      - ./configs/node.ini:/etc/my.cnf
+    networks:
+      - mysql_cluster
+  
+  mysql-server:
+    image: obulka/mysql-cluster
+    depends_on:
+      - "management"
+      - "data1"
+      - "data2"
+      - "data3"
+      - "data4"
+    command: mysqld --ndb-nodeid=4
+    volumes:
+      - ./configs/node.ini:/etc/my.cnf
+    environment:
+      MYSQL_ROOT_PASSWORD: my-super-puper-password
+      MYSQL_PASSWORD: my-super-password
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: myapp
+
+    ports:
+      - 3310:3306
+    networks:
+      - mysql_cluster
+
+networks:
+  mysql_cluster:
+    driver: bridge
+
