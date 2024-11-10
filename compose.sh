@@ -1,8 +1,8 @@
 #!/bin/bash
 num_nodes=${1:-1}
 nodes_suffix=$(if [ "${num_nodes}" = "1" ]; then echo node; else echo nodes; fi)
-no_cluster=${no_cluster}
-if [ "$((no_cluster))" != "" ]; then
+cluster=${cluster:-false}
+if [ "${cluster}" != "true" ]; then
   nodes_suffix="${nodes_suffix}-no-cluster"
 fi
 #echo ${nodes_suffix}

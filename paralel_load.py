@@ -1,13 +1,13 @@
 import mysql.connector
 from mysql.connector import Error
-import random
+import pdb
 import time
 import threading
 import sys
 import os
 
 # Database configuration for connecting to the main MySQL cluster
-config = {
+cluster_config = {
     "host": "localhost",  # IP of the SQL node in the cluster
     "port": "3310",  # Port of the SQL node
     "user": "myapp",
@@ -15,7 +15,34 @@ config = {
     "database": "mydb",  # Database name
 }
 
-empty_threads = os.environ.get("empty_threads", "") != ""
+node_configs = [
+    {
+        "host": "localhost",
+        "port": "3307",
+        "user": "user",
+        "password": "password",
+        "database": "shard1db",
+    },
+    {
+        "host": "localhost",
+        "port": "3308",
+        "user": "user",
+        "password": "password",
+        "database": "shard2db",
+    },
+]
+
+num_nodes = int(os.environ.get("num_nodes", "0"))
+if num_nodes:
+    print(f"\033[36mSeparate shards: {num_nodes} node(s)\033[0m")
+
+
+if num_nodes:
+    database_configs = node_configs[:num_nodes]
+else:
+    database_configs = [cluster_config]
+
+empty_threads = os.environ.get("empty_threads", "false") != "false"
 if empty_threads:
     print("\033[31mEmpty threads!\033[0m")
 
@@ -31,7 +58,7 @@ comments_per_thread = 1000 if len(sys.argv) < 3 else int(sys.argv[2])
 
 
 # Function to connect to the database
-def connect_to_db():
+def connect_to_db(config):
     try:
         connection = mysql.connector.connect(
             host=config["host"],
@@ -44,18 +71,20 @@ def connect_to_db():
             return connection
     except Error as e:
         print(f"Error while connecting to MySQL: {e}")
+        # pdb.set_trace()
         return None
 
 
 # Function to generate and insert comments
-def insert_comments(connection, start_id):
+def insert_comments(connections, start_id):
     if empty_threads:
         return
-    try:
-        cursor = connection.cursor()
-        for i in range(comments_per_thread):
-            comment_id = start_id + i
-            comment_text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    for i in range(comments_per_thread):
+        comment_id = start_id + i
+        comment_text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        connection = connections[comment_id % num_nodes if num_nodes else 0]
+        try:
+            cursor = connection.cursor()
             cursor.execute(
                 """
                 INSERT INTO Comments (comment_id, comment_text)
@@ -64,10 +93,10 @@ def insert_comments(connection, start_id):
                 (comment_id, comment_text),
             )
             connection.commit()
-    except Error as e:
-        print(f"Error inserting comment: {e}")
-    finally:
-        cursor.close()
+        except Error as e:
+            print(f"Error inserting comment: {e}")
+        finally:
+            cursor.close()
 
 
 # Функція для підключення до кластеру без вказання бази даних
@@ -104,12 +133,17 @@ def recreate_database(connection, db_name):
 def create_table(connection):
     try:
         cursor = connection.cursor()
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS Comments (
-            comment_id INT PRIMARY KEY,
-            comment_text TEXT NOT NULL
-        ) ENGINE=NDBCLUSTER;  -- Використовуємо NDBCLUSTER для розподілу даних
-        """)
+        query = """
+            CREATE TABLE IF NOT EXISTS Comments (
+                comment_id INT PRIMARY KEY,
+                comment_text TEXT NOT NULL
+            )
+            """
+        if num_nodes == 0:  # cluster
+            query += (
+                " ENGINE=NDBCLUSTER;  -- Використовуємо NDBCLUSTER для розподілу даних"
+            )
+        cursor.execute(query)
         # print("Table 'Comments' created successfully in MySQL Cluster")
     except Error as e:
         print(f"Error creating table: {e}")
@@ -118,41 +152,48 @@ def create_table(connection):
 
 
 # Основна функція для керування базою даних і таблицею
-def manage_database():
-    # Підключення без вибору бази, щоб мати змогу керувати самою базою
-    connection = connect_to_cluster(config, use_database=False)
-    if connection:
-        # Дроп і створення бази даних
-        recreate_database(connection, config["database"])
-        connection.close()
 
-    # Підключення до щойно створеної бази для створення таблиці
-    connection = connect_to_cluster(config, use_database=True)
-    if connection:
-        # Створення таблиці
-        create_table(connection)
+
+def manage_database():
+    for config in database_configs:
+        # Підключення без вибору бази, щоб мати змогу керувати самою базою
+        connection = connect_to_cluster(config, use_database=False)
+        if connection:
+            # Дроп і створення бази даних
+            recreate_database(connection, config["database"])
+            connection.close()
+
+        # Підключення до щойно створеної бази для створення таблиці
+        connection = connect_to_cluster(config, use_database=True)
+        if connection:
+            # Створення таблиці
+            create_table(connection)
         connection.close()
 
 
 # Main function to create threads and insert comments
 def main():
     manage_database()
-    connections = []
+    connections_per_thread = []
 
     for _ in range(num_threads):
-        connection = connect_to_db()
-        if connection:
-            connections.append(connection)
-        else:
-            print("Could not connect to database")
-            return
+        connections = []
+        for config in database_configs:
+            connection = connect_to_db(config)
+            if connection:
+                connections.append(connection)
+            else:
+                print("Could not connect to database")
+                return
+        connections_per_thread.append(connections)
     # Start each thread
     start_time = time.time()
     threads = []
     for thread_id in range(num_threads):
         start_id = thread_id * comments_per_thread + 1
         thread = threading.Thread(
-            target=insert_comments, args=(connections[thread_id], start_id)
+            target=insert_comments, args=(
+                connections_per_thread[thread_id], start_id)
         )
         threads.append(thread)
         thread.start()

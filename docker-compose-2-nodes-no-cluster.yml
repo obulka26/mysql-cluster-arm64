@@ -3,6 +3,7 @@ services:
   mysql-shard1:
     image: mysql:latest
     container_name: mysql-shard1
+    #command: mysqld --innodb-buffer-pool-size=256M
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: shard1db
@@ -18,6 +19,7 @@ services:
   mysql-shard2:
     image: mysql:latest
     container_name: mysql-shard2
+    #command: mysqld --innodb-buffer-pool-size=256M
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: shard2db
