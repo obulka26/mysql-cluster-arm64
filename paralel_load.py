@@ -26,8 +26,8 @@ if len(sys.argv) < 2:
 num_threads = int(sys.argv[1])
 comments_per_thread = 1000 if len(sys.argv) < 3 else int(sys.argv[2])
 
-print(f"Number of threads {num_threads}")
-print(f"Comments per thread {comments_per_thread}")
+# print(f"Number of threads {num_threads}")
+# print(f"Comments per thread {comments_per_thread}")
 
 
 # Function to connect to the database
@@ -79,11 +79,8 @@ def connect_to_cluster(config, use_database=False):
             connection_config.pop("database")
         connection = mysql.connector.connect(**connection_config)
         if connection.is_connected():
-            db = config["database"] if use_database else "MySQL Cluster"
-            print(
-                f"Successfully connected to {db} at {
-                    config['host']}:{config['port']}"
-            )
+            _ = config["database"] if use_database else "MySQL Cluster"
+            # `print( f"Successfully connected to {db} at { config['host']}:{config['port']}")
         return connection
     except Error as e:
         print(f"Error while connecting to MySQL Cluster: {e}")
@@ -96,7 +93,7 @@ def recreate_database(connection, db_name):
         cursor = connection.cursor()
         cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
         cursor.execute(f"CREATE DATABASE {db_name}")
-        print(f"Database '{db_name}' created successfully")
+        # print(f"Database '{db_name}' created successfully")
     except Error as e:
         print(f"Error recreating database: {e}")
     finally:
@@ -113,7 +110,7 @@ def create_table(connection):
             comment_text TEXT NOT NULL
         ) ENGINE=NDBCLUSTER;  -- Використовуємо NDBCLUSTER для розподілу даних
         """)
-        print("Table 'Comments' created successfully in MySQL Cluster")
+        # print("Table 'Comments' created successfully in MySQL Cluster")
     except Error as e:
         print(f"Error creating table: {e}")
     finally:
